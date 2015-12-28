@@ -1,5 +1,6 @@
 from datetime import datetime
 
+
 class DpTrainer:
     def __init__(self):
         self.feature_1_dict = dict()
@@ -69,11 +70,27 @@ class DpTrainer:
         else:
             feature_dict[feature_data] = 1
 
+    def train(self):
+        start_time = datetime.now()
+        print('Started learning process:')
+        print('\nGetting all features...')
+        x.get_features()
+        print('Found the following features:')
+        print('------------------------------')
+        print(str(len(self.feature_1_dict)) + ' of feature 1')
+        print(str(len(self.feature_2_dict)) + ' of feature 2')
+        print(str(len(self.feature_3_dict)) + ' of feature 3')
+        print(str(len(self.feature_4_dict)) + ' of feature 4')
+        print(str(len(self.feature_5_dict)) + ' of feature 5')
+        print(str(len(self.feature_6_dict)) + ' of feature 6')
+        print(str(len(self.feature_8_dict)) + ' of feature 8')
+        print(str(len(self.feature_10_dict)) + ' of feature 10')
+        print(str(len(self.feature_13_dict)) + ' of feature 13')
+        print('\nThe all learning process took ' + str(datetime.now()-start_time))
 
-start_time = datetime.now()
+
 x = DpTrainer()
-x.get_features()
-print('It took ' + str(datetime.now()-start_time))
+x.train()
 
 
 
