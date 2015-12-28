@@ -24,10 +24,13 @@ class DpTrainer:
         self.feature_13_dict = dict()
 
         # TODO: Need this???
+        # TODO: Ask Omer - There's sentences in the training that appear more than once!
         self.sentence_to_arch_dict = dict()
 
         self.features = dict()
         self.feature_num = 0
+
+        self.calculated_trees_score = dict()
 
     #################
     # FEATURES PART #
@@ -113,6 +116,35 @@ class DpTrainer:
                     counter += 1
         print(str(counter) + ' of feature ' + str(dict_num))
 
+    #################
+    # Pre Calculate #
+    #################
+
+    def calculate_real_score(self):
+        for sentence in self.sentence_to_arch_dict:
+            num_features = []
+            for dependency_arch in self.sentence_to_arch_dict[sentence]:
+                if ((dependency_arch[0], dependency_arch[1]), 1) in self.features:
+                    num_features.append(self.features[((dependency_arch[0], dependency_arch[1]), 1)])
+                if ((dependency_arch[0], ''), 2) in self.features:
+                    num_features.append(self.features[((dependency_arch[0], ''), 2)])
+                if ((dependency_arch[1], ''), 3) in self.features:
+                    num_features.append(self.features[((dependency_arch[1], ''), 3)])
+                if ((dependency_arch[2], dependency_arch[3]), 4) in self.features:
+                    num_features.append(self.features[((dependency_arch[2], dependency_arch[3]), 4)])
+                if ((dependency_arch[2], ''), 5) in self.features:
+                    num_features.append(self.features[((dependency_arch[2], ''), 5)])
+                if ((dependency_arch[3], ''), 6) in self.features:
+                    num_features.append(self.features[((dependency_arch[3], ''), 6)])
+                if ((dependency_arch[1], (dependency_arch[2], dependency_arch[3])), 8) in self.features:
+                    num_features.append(self.features[((dependency_arch[1], (dependency_arch[2], dependency_arch[3])), 8)])
+                if (((dependency_arch[0], dependency_arch[1]), dependency_arch[3]), 10) in self.features:
+                    num_features.append(self.features[(((dependency_arch[0], dependency_arch[1]), dependency_arch[3]), 10)])
+                if ((dependency_arch[1], dependency_arch[3]), 13) in self.features:
+                    num_features.append(self.features[((dependency_arch[1], dependency_arch[3]), 13)])
+
+                self.calculated_trees_score[sentence] = num_features
+
     def train(self):
         start_time = datetime.now()
         print('\nGetting all features...')
@@ -137,6 +169,10 @@ class DpTrainer:
         print('----------------------------------------------------------')
         self.get_frequent_features()
         print('***Total of ' + str(len(self.features)) + ' optimized features***')
+
+        print('\nCalculating the score for all labeled sentence...')
+        self.calculate_real_score()
+        print('All done!')
 
         print('\nTHE LEARNING PROCESS TOOK ' + str(datetime.now()-start_time))
 
