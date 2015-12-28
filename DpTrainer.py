@@ -2,6 +2,16 @@ from datetime import datetime
 
 
 class DpTrainer:
+    FEATURE_1_LIMIT = 0
+    FEATURE_2_LIMIT = 0
+    FEATURE_3_LIMIT = 0
+    FEATURE_4_LIMIT = 0
+    FEATURE_5_LIMIT = 0
+    FEATURE_6_LIMIT = 0
+    FEATURE_8_LIMIT = 0
+    FEATURE_10_LIMIT = 0
+    FEATURE_13_LIMIT = 0
+
     def __init__(self):
         self.feature_1_dict = dict()
         self.feature_2_dict = dict()
@@ -13,7 +23,15 @@ class DpTrainer:
         self.feature_10_dict = dict()
         self.feature_13_dict = dict()
 
+        # TODO: Need this???
         self.sentence_to_arch_dict = dict()
+
+        self.features = dict()
+        self.feature_num = 0
+
+    #################
+    # FEATURES PART #
+    #################
 
     def get_features(self):
         sentence_words_pos = dict()
@@ -70,11 +88,35 @@ class DpTrainer:
         else:
             feature_dict[feature_data] = 1
 
+    ##########################
+    # FREQUENT FEATURES PART #
+    ##########################
+
+    def get_frequent_features(self):
+        self.add_frequent_feature(self.FEATURE_1_LIMIT, self.feature_1_dict, 1)
+        self.add_frequent_feature(self.FEATURE_2_LIMIT, self.feature_2_dict, 2)
+        self.add_frequent_feature(self.FEATURE_3_LIMIT, self.feature_3_dict, 3)
+        self.add_frequent_feature(self.FEATURE_4_LIMIT, self.feature_4_dict,4)
+        self.add_frequent_feature(self.FEATURE_5_LIMIT, self.feature_5_dict, 5)
+        self.add_frequent_feature(self.FEATURE_6_LIMIT, self.feature_6_dict, 6)
+        self.add_frequent_feature(self.FEATURE_8_LIMIT, self.feature_8_dict, 8)
+        self.add_frequent_feature(self.FEATURE_10_LIMIT, self.feature_10_dict, 10)
+        self.add_frequent_feature(self.FEATURE_13_LIMIT, self.feature_13_dict, 13)
+
+    def add_frequent_feature(self, limit, feature_dict, dict_num):
+        counter = 0
+        for key in feature_dict:
+            if feature_dict[key] > limit:
+                if key not in self.features:
+                    self.features[(key, dict_num)] = self.feature_num
+                    self.feature_num += 1
+                    counter += 1
+        print(str(counter) + ' of feature ' + str(dict_num))
+
     def train(self):
         start_time = datetime.now()
-        print('Started learning process:')
         print('\nGetting all features...')
-        x.get_features()
+        self.get_features()
         print('Found the following features:')
         print('------------------------------')
         print(str(len(self.feature_1_dict)) + ' of feature 1')
@@ -86,7 +128,17 @@ class DpTrainer:
         print(str(len(self.feature_8_dict)) + ' of feature 8')
         print(str(len(self.feature_10_dict)) + ' of feature 10')
         print(str(len(self.feature_13_dict)) + ' of feature 13')
-        print('\nThe all learning process took ' + str(datetime.now()-start_time))
+        print('***Total of ' + str(len(self.feature_1_dict)+len(self.feature_2_dict)+len(self.feature_3_dict) +
+                                   len(self.feature_4_dict)+len(self.feature_5_dict)+len(self.feature_6_dict) +
+                                   len(self.feature_8_dict)+len(self.feature_10_dict)+len(self.feature_13_dict)) +
+              ' features***')
+
+        print('\nAfter optimization, we left with the following features:')
+        print('----------------------------------------------------------')
+        self.get_frequent_features()
+        print('***Total of ' + str(len(self.features)) + ' optimized features***')
+
+        print('\nTHE LEARNING PROCESS TOOK ' + str(datetime.now()-start_time))
 
 
 x = DpTrainer()
