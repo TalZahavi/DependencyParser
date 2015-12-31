@@ -24,7 +24,7 @@ class DpTrainer:
         self.feature_13_dict = dict()
 
         # TODO: Ask Omer - There's sentences in the training that appear more than once!
-        self.arches_data = []
+        self.arches_data_list = []
 
         self.features = dict()
         self.feature_num = 0
@@ -43,6 +43,7 @@ class DpTrainer:
             for line in f:
                 if line is '\n':
                     arches = set()
+                    data_for_full_graph = set()
                     for counter in sentence_words_pos:
                         word_tuple = sentence_words_pos[counter]
                         if word_tuple[2] == 0:
@@ -53,7 +54,9 @@ class DpTrainer:
                                                sentence_words_pos[word_tuple[2]][1], word_tuple[0], word_tuple[1])
                         self.add_features_to_dicts(dependency_arch)
                         arches.add(dependency_arch)
-                    self.arches_data.append(arches)
+                        data_for_full_graph.add((dependency_arch[0], dependency_arch[1]))
+                        data_for_full_graph.add((dependency_arch[2], dependency_arch[3]))
+                    self.arches_data_list.append((arches, list(data_for_full_graph)))
                     sentence_words_pos = dict()
                 else:
                     split_line = line.split('\t')
@@ -84,18 +87,32 @@ class DpTrainer:
             feature_dict[feature_data] = 1
 
     # Create a graph representation of the sentence (for edmond)
-    # TODO: NEED TO MAKE ALSO FULL GRAPH HERE! IMPLEMENT full_g!
+    # Create a full graph representation of the sentence (for edmond)
     def make_graphs(self):
-        for arches_data in self.arches_data:
+        for arches_data_list_data in self.arches_data_list:
+            arches_data = arches_data_list_data[0]
             g = dict()
-            full_g = dict()
             for arch in arches_data:
                 if (arch[0], arch[1]) in g:
                     g[(arch[0], arch[1])][(arch[2], arch[3])] = 0
                 else:
                     g[(arch[0], arch[1])] = {(arch[2], arch[3]): 0}
 
-            self.graphs.append((g, full_g))
+            self.graphs.append((g, self.make_full_graph(arches_data_list_data[1])))
+
+    @staticmethod
+    # Get (word,pos) data and make a full graph
+    def make_full_graph(words_pos):
+        full_g = dict()
+        for word_pos_i in words_pos:
+            for word_pos_j in words_pos:
+                if word_pos_i[0] != word_pos_j[0] and word_pos_j[0] != 'root':
+
+                    if (word_pos_i[0], word_pos_i[1]) in full_g:
+                        (full_g[(word_pos_i[0], word_pos_i[1])])[(word_pos_j[0], word_pos_j[1])] = 0
+                    else:
+                        full_g[(word_pos_i[0], word_pos_i[1])] = {(word_pos_j[0], word_pos_j[1]): 0}
+        return full_g
 
     ##########################
     # FREQUENT FEATURES PART #
