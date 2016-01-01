@@ -1,5 +1,6 @@
 from datetime import datetime
 import networkx as nx
+import numpy as np
 
 
 class DependencyTrainer:
@@ -31,6 +32,8 @@ class DependencyTrainer:
 
         self.graphs = []  # Holds (graph, full_graph)
         self.scored_graphs = []  # Holds (graph, graph features,  full_graph, full_graph features)
+
+        self.w_20 = np.zeros(1)
 
     #################
     # FEATURES PART #
@@ -181,6 +184,31 @@ class DependencyTrainer:
             self.scored_graphs.append((data[0], self.get_features_for_graph(data[0]),
                                        data[1], self.get_features_for_graph(data[1])))
 
+    ########################
+    # Perceptron Algorithm #
+    ########################
+
+    # TODO: NEED TO ADD SUPPORT IN SCORED_GRAPHS!! FOR BETTER PERFORMANCE!
+    def get_weighted_graph(self, g, w):
+        for edge in g.edges(data=True):
+            dependency_arch = (edge[0][0], edge[0][1], edge[1][0], edge[1][1])
+            feature_list = self.get_features_for_arch(dependency_arch)
+            weight = 0
+            for feature_i in feature_list:
+                weight += w[feature_i]
+            edge[2]['weight'] = -weight
+        return g
+
+    def perceptron(self, n):
+        w = np.zeros(self.feature_num)
+        for i in range(0, n):
+            iteration_time = datetime.now()
+            for data in self.graphs:
+                weighted_full_graph = self.get_weighted_graph(data[1], w)
+                g_tag = nx.algorithms.minimum_spanning_tree(weighted_full_graph.to_undirected())
+            print('Done ' + str(i+1) + ' iteration at ' + str(datetime.now()-iteration_time))
+        return w
+
     #########
     # Train #
     #########
@@ -211,13 +239,13 @@ class DependencyTrainer:
         self.get_frequent_features()
         print('***Total of ' + str(len(self.features)) + ' optimized features***')
         #
-        print('\nDoing some magic...')
-        self.calculate_features_for_all_graphs()
-        print('All done!')
+        # print('\nDoing some magic...')
+        # self.calculate_features_for_all_graphs()
+        # print('All done!')
         #
-        # print('\nStarting perceptron with N=20')
-        # self.perceptron(20)
-        # print('DONE')
+        print('\nStarting perceptron with N=20')
+        self.perceptron(1)
+        print('DONE')
         # print('\nStarting perceptron with N=50')
         # self.perceptron(50)
         # print('DONE')
