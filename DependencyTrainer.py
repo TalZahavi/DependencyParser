@@ -1,17 +1,18 @@
 from datetime import datetime
 import networkx as nx
 import numpy as np
+import pickle
 
 
 class DependencyTrainer:
-    FEATURE_1_LIMIT = 0
-    FEATURE_2_LIMIT = 0
+    FEATURE_1_LIMIT = 2
+    FEATURE_2_LIMIT = 2
     FEATURE_3_LIMIT = 0
-    FEATURE_4_LIMIT = 0
-    FEATURE_5_LIMIT = 0
+    FEATURE_4_LIMIT = 5
+    FEATURE_5_LIMIT = 5
     FEATURE_6_LIMIT = 0
-    FEATURE_8_LIMIT = 0
-    FEATURE_10_LIMIT = 0
+    FEATURE_8_LIMIT = 10
+    FEATURE_10_LIMIT = 10
     FEATURE_13_LIMIT = 0
 
     def __init__(self):
@@ -33,7 +34,7 @@ class DependencyTrainer:
         self.graphs = []  # Holds (graph, full_graph)
         self.scored_graphs = []  # Holds (graph, graph features,  full_graph, full_graph features)
 
-        self.w_20 = np.zeros(1, dtype=int)
+        self.f_vector_results = dict()
 
     #################
     # FEATURES PART #
@@ -208,9 +209,22 @@ class DependencyTrainer:
                 f_vector[feature_i] += 1
         return f_vector
 
+    # If the f_vector of a real graph is already calculated - return the result
+    # Else, calculate the features and save to the dictionary
+    def get_f_vector_real(self, g):
+        if g in self.f_vector_results:
+            return self.f_vector_results[g]
+        else:
+            temp = self.get_f_vector(g)
+            self.f_vector_results[g] = temp
+            return temp
+
     # Because we send to the MST an undirected graph - we need to find the directed
-    def get_directed_graph(self, g_undirected):
-        pass
+    @staticmethod
+    def get_directed_graph(g_undirected, g_direct):
+        E = set(g_undirected.edges())
+        new_edges = [e for e in g_direct.edges() if e in E or reversed(e) in E]
+        return nx.DiGraph(new_edges)
 
     def perceptron(self, n):
         w = np.zeros(self.feature_num, dtype=int)
@@ -219,10 +233,10 @@ class DependencyTrainer:
             for data in self.scored_graphs:
                 weighted_full_graph = self.get_weighted_graph(data[2], data[3], w)
                 g_tag_undirected = nx.algorithms.minimum_spanning_tree(weighted_full_graph.to_undirected())
-                g_tag = self.get_directed_graph(g_tag_undirected)
+                g_tag = self.get_directed_graph(g_tag_undirected, weighted_full_graph)
 
-                if True:  # TODO: NEED HERE TO CHECK IF NOT EQUAL + CAN SAVE F VECTOR FOR REAL GRAPH
-                    w = w + self.get_f_vector(data[0]) - self.get_f_vector(g_tag)
+                if True:  # TODO: NEED HERE TO CHECK IF NOT EQUAL?
+                    w = w + self.get_f_vector_real(data[0]) - self.get_f_vector(g_tag)
             print('Done ' + str(i+1) + ' iteration at ' + str(datetime.now()-iteration_time))
         return w
 
@@ -260,19 +274,25 @@ class DependencyTrainer:
         self.calculate_features_for_all_graphs()
         print('All done!')
 
-        print('\nStarting perceptron with N=20')
+        print('\nStarting perceptron with N = 20:')
         w_20 = self.perceptron(20)
         print('DONE perceptron (N=20)')
-        print(w_20)
-        # print('\nStarting perceptron with N=50')
-        # self.perceptron(50)
-        # print('DONE perceptron (N=50)')
-        # print('\nStarting perceptron with N=80')
-        # self.perceptron(80)
-        # print('DONE perceptron (N=80)')
-        # print('\nStarting perceptron with N=100')
-        # self.perceptron(100)
-        # print('DONE perceptron (N=100)')
+        pickle.dump(w_20, open("Perceptron Results\\basic_w_20.p", "wb"), protocol=2)
+
+        print('\nStarting perceptron with N = 50:')
+        w_50 = self.perceptron(50)
+        print('DONE perceptron (N=50)')
+        pickle.dump(w_50, open("Perceptron Results\\basic_w_50.p", "wb"), protocol=2)
+
+        print('\nStarting perceptron with N = 80:')
+        w_80 = self.perceptron(80)
+        print('DONE perceptron (N=80)')
+        pickle.dump(w_80, open("Perceptron Results\\basic_w_80.p", "wb"), protocol=2)
+
+        print('\nStarting perceptron with N = 100:')
+        w_100 = self.perceptron(100)
+        print('DONE perceptron (N=100)')
+        pickle.dump(w_100, open("Perceptron Results\\basic_w_100.p", "wb"), protocol=2)
 
         print('\nTHE LEARNING PROCESS TOOK ' + str(datetime.now()-start_time))
 
