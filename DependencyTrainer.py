@@ -1,7 +1,8 @@
 from datetime import datetime
+import networkx as nx
 
 
-class DpTrainer:
+class DependencyTrainer:
     FEATURE_1_LIMIT = 0
     FEATURE_2_LIMIT = 0
     FEATURE_3_LIMIT = 0
@@ -23,14 +24,13 @@ class DpTrainer:
         self.feature_10_dict = dict()
         self.feature_13_dict = dict()
 
-        # TODO: Ask Omer - There's sentences in the training that appear more than once!
-        self.arches_data_list = []
+        self.arches_data_for_graphs = []
 
         self.features = dict()
         self.feature_num = 0
 
         self.graphs = []  # Holds (graph, full_graph)
-        self.scored_graphs = []  # Holds (graph, graph score,  full_graph, full_graph score)
+        self.scored_graphs = []  # Holds (graph, graph features,  full_graph, full_graph features)
 
     #################
     # FEATURES PART #
@@ -53,10 +53,12 @@ class DpTrainer:
                             dependency_arch = (sentence_words_pos[word_tuple[2]][0],
                                                sentence_words_pos[word_tuple[2]][1], word_tuple[0], word_tuple[1])
                         self.add_features_to_dicts(dependency_arch)
+
                         arches.add(dependency_arch)
                         data_for_full_graph.add((dependency_arch[0], dependency_arch[1]))
                         data_for_full_graph.add((dependency_arch[2], dependency_arch[3]))
-                    self.arches_data_list.append((arches, list(data_for_full_graph)))
+                    self.arches_data_for_graphs.append((arches, list(data_for_full_graph)))
+
                     sentence_words_pos = dict()
                 else:
                     split_line = line.split('\t')
@@ -86,32 +88,27 @@ class DpTrainer:
         else:
             feature_dict[feature_data] = 1
 
+    ################
+    # BUILD GRAPHS #
+    ################
+
     # Create a graph representation of the sentence (for edmond)
     # Create a full graph representation of the sentence (for edmond)
-    def make_graphs(self):
-        for arches_data_list_data in self.arches_data_list:
-            arches_data = arches_data_list_data[0]
-            g = dict()
-            for arch in arches_data:
-                if (arch[0], arch[1]) in g:
-                    g[(arch[0], arch[1])][(arch[2], arch[3])] = 0
-                else:
-                    g[(arch[0], arch[1])] = {(arch[2], arch[3]): 0}
-
-            self.graphs.append((g, self.make_full_graph(arches_data_list_data[1])))
+    def build_graphs(self):
+        for arches_data_list_data in self.arches_data_for_graphs:
+            g = nx.DiGraph()
+            for arch in arches_data_list_data[0]:
+                g.add_edge((arch[0], arch[1]), (arch[2], arch[3]), weight=0)
+            self.graphs.append((g, self.build_full_graph(arches_data_list_data[1])))
 
     @staticmethod
     # Get (word,pos) data and make a full graph
-    def make_full_graph(words_pos):
-        full_g = dict()
+    def build_full_graph(words_pos):
+        full_g = nx.DiGraph()
         for word_pos_i in words_pos:
             for word_pos_j in words_pos:
                 if word_pos_i[0] != word_pos_j[0] and word_pos_j[0] != 'root':
-
-                    if (word_pos_i[0], word_pos_i[1]) in full_g:
-                        (full_g[(word_pos_i[0], word_pos_i[1])])[(word_pos_j[0], word_pos_j[1])] = 0
-                    else:
-                        full_g[(word_pos_i[0], word_pos_i[1])] = {(word_pos_j[0], word_pos_j[1]): 0}
+                    full_g.add_edge((word_pos_i[0], word_pos_i[1]), (word_pos_j[0], word_pos_j[1]), weight=0)
         return full_g
 
     ##########################
@@ -172,10 +169,9 @@ class DpTrainer:
     # Each list holds the features number that return 1 for that arch
     def get_features_for_graph(self, g):
         features_list = []
-        for head_data in g:
-            for child_data in g[head_data]:
-                dependency_arch = (head_data[0], head_data[1], child_data[0], child_data[1])
-                features_list.append(self.get_features_for_arch(dependency_arch))
+        for edge in g.edges(data=True):
+            dependency_arch = (edge[0][0], edge[0][1], edge[1][0], edge[1][1])
+            features_list.append(self.get_features_for_arch(dependency_arch))
         return features_list
 
     # Doing this calculation one time !
@@ -185,13 +181,6 @@ class DpTrainer:
             self.scored_graphs.append((data[0], self.get_features_for_graph(data[0]),
                                        data[1], self.get_features_for_graph(data[1])))
 
-    ########################
-    # Perceptron Algorithm #
-    ########################
-
-    def perceptron(self, n):
-        pass
-
     #########
     # Train #
     #########
@@ -200,7 +189,7 @@ class DpTrainer:
         start_time = datetime.now()
         print('\nGetting all features...')
         self.get_features()
-        self.make_graphs()
+        self.build_graphs()
         print('Found the following features:')
         print('------------------------------')
         print(str(len(self.feature_1_dict)) + ' of feature 1')
@@ -221,29 +210,25 @@ class DpTrainer:
         print('----------------------------------------------------------')
         self.get_frequent_features()
         print('***Total of ' + str(len(self.features)) + ' optimized features***')
-
+        #
         print('\nDoing some magic...')
         self.calculate_features_for_all_graphs()
         print('All done!')
-
-        print('\nStarting perceptron with N=20')
-        self.perceptron(20)
-        print('DONE')
-        print('\nStarting perceptron with N=50')
-        self.perceptron(50)
-        print('DONE')
-        print('\nStarting perceptron with N=80')
-        self.perceptron(80)
-        print('DONE')
-        print('\nStarting perceptron with N=100')
-        self.perceptron(100)
-        print('DONE')
+        #
+        # print('\nStarting perceptron with N=20')
+        # self.perceptron(20)
+        # print('DONE')
+        # print('\nStarting perceptron with N=50')
+        # self.perceptron(50)
+        # print('DONE')
+        # print('\nStarting perceptron with N=80')
+        # self.perceptron(80)
+        # print('DONE')
+        # print('\nStarting perceptron with N=100')
+        # self.perceptron(100)
+        # print('DONE')
 
         print('\nTHE LEARNING PROCESS TOOK ' + str(datetime.now()-start_time))
 
-
-x = DpTrainer()
+x = DependencyTrainer()
 x.train()
-
-
-
