@@ -33,7 +33,7 @@ class DependencyTrainer:
         self.graphs = []  # Holds (graph, full_graph)
         self.scored_graphs = []  # Holds (graph, graph features,  full_graph, full_graph features)
 
-        self.w_20 = np.zeros(1)
+        self.w_20 = np.zeros(1, dtype=int)
 
     #################
     # FEATURES PART #
@@ -174,7 +174,7 @@ class DependencyTrainer:
         features_list = []
         for edge in g.edges(data=True):
             dependency_arch = (edge[0][0], edge[0][1], edge[1][0], edge[1][1])
-            features_list.append(self.get_features_for_arch(dependency_arch))
+            features_list.append((edge[0], edge[1], self.get_features_for_arch(dependency_arch)))
         return features_list
 
     # Doing this calculation one time !
@@ -188,24 +188,41 @@ class DependencyTrainer:
     # Perceptron Algorithm #
     ########################
 
-    # TODO: NEED TO ADD SUPPORT IN SCORED_GRAPHS!! FOR BETTER PERFORMANCE!
-    def get_weighted_graph(self, g, w):
-        for edge in g.edges(data=True):
-            dependency_arch = (edge[0][0], edge[0][1], edge[1][0], edge[1][1])
-            feature_list = self.get_features_for_arch(dependency_arch)
+    @staticmethod
+    # Get a graph and a features list that fit to his arches
+    # Return a weighted graph (according to the features)
+    def get_weighted_graph(g, features_list, w):
+        for features_edge in features_list:
             weight = 0
-            for feature_i in feature_list:
+            for feature_i in features_edge[2]:
                 weight += w[feature_i]
-            edge[2]['weight'] = -weight
+            g[features_edge[0]][features_edge[1]]['weight'] = -weight
         return g
 
+    # Get a graph and return "f_vector" for him
+    def get_f_vector(self, g):
+        f_vector = np.zeros(self.feature_num, dtype=int)
+        features = self.get_features_for_graph(g)
+        for feature_data in features:
+            for feature_i in feature_data[2]:
+                f_vector[feature_i] += 1
+        return f_vector
+
+    # Because we send to the MST an undirected graph - we need to find the directed
+    def get_directed_graph(self, g_undirected):
+        pass
+
     def perceptron(self, n):
-        w = np.zeros(self.feature_num)
+        w = np.zeros(self.feature_num, dtype=int)
         for i in range(0, n):
             iteration_time = datetime.now()
-            for data in self.graphs:
-                weighted_full_graph = self.get_weighted_graph(data[1], w)
-                g_tag = nx.algorithms.minimum_spanning_tree(weighted_full_graph.to_undirected())
+            for data in self.scored_graphs:
+                weighted_full_graph = self.get_weighted_graph(data[2], data[3], w)
+                g_tag_undirected = nx.algorithms.minimum_spanning_tree(weighted_full_graph.to_undirected())
+                g_tag = self.get_directed_graph(g_tag_undirected)
+
+                if True:  # TODO: NEED HERE TO CHECK IF NOT EQUAL + CAN SAVE F VECTOR FOR REAL GRAPH
+                    w = w + self.get_f_vector(data[0]) - self.get_f_vector(g_tag)
             print('Done ' + str(i+1) + ' iteration at ' + str(datetime.now()-iteration_time))
         return w
 
@@ -238,23 +255,24 @@ class DependencyTrainer:
         print('----------------------------------------------------------')
         self.get_frequent_features()
         print('***Total of ' + str(len(self.features)) + ' optimized features***')
-        #
-        # print('\nDoing some magic...')
-        # self.calculate_features_for_all_graphs()
-        # print('All done!')
-        #
+
+        print('\nDoing some magic...')
+        self.calculate_features_for_all_graphs()
+        print('All done!')
+
         print('\nStarting perceptron with N=20')
-        self.perceptron(1)
-        print('DONE')
+        w_20 = self.perceptron(20)
+        print('DONE perceptron (N=20)')
+        print(w_20)
         # print('\nStarting perceptron with N=50')
         # self.perceptron(50)
-        # print('DONE')
+        # print('DONE perceptron (N=50)')
         # print('\nStarting perceptron with N=80')
         # self.perceptron(80)
-        # print('DONE')
+        # print('DONE perceptron (N=80)')
         # print('\nStarting perceptron with N=100')
         # self.perceptron(100)
-        # print('DONE')
+        # print('DONE perceptron (N=100)')
 
         print('\nTHE LEARNING PROCESS TOOK ' + str(datetime.now()-start_time))
 
