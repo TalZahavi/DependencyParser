@@ -238,7 +238,22 @@ class DependencyTrainer:
                 if True:  # TODO: NEED HERE TO CHECK IF NOT EQUAL?
                     w = w + self.get_f_vector_real(data[0]) - self.get_f_vector(g_tag)
             print('Done ' + str(i+1) + ' iteration at ' + str(datetime.now()-iteration_time))
-        return w
+            self.save_w(w, i+1)
+
+    @staticmethod
+    def save_w(w, iteration):
+        if iteration == 20:
+            print('DONE perceptron (N=20)')
+            pickle.dump(w, open("Perceptron Results\\basic_w_20.p", "wb"), protocol=2)
+        if iteration == 50:
+            print('DONE perceptron (N=50)')
+            pickle.dump(w, open("Perceptron Results\\basic_w_50.p", "wb"), protocol=2)
+        if iteration == 80:
+            print('DONE perceptron (N=80)')
+            pickle.dump(w, open("Perceptron Results\\basic_w_80.p", "wb"), protocol=2)
+        if iteration == 100:
+            print('DONE perceptron (N=100)')
+            pickle.dump(w, open("Perceptron Results\\basic_w_100.p", "wb"), protocol=2)
 
     #########
     # Train #
@@ -274,25 +289,7 @@ class DependencyTrainer:
         self.calculate_features_for_all_graphs()
         print('All done!')
 
-        print('\nStarting perceptron with N = 20:')
-        w_20 = self.perceptron(20)
-        print('DONE perceptron (N=20)')
-        pickle.dump(w_20, open("Perceptron Results\\basic_w_20.p", "wb"), protocol=2)
-
-        print('\nStarting perceptron with N = 50:')
-        w_50 = self.perceptron(50)
-        print('DONE perceptron (N=50)')
-        pickle.dump(w_50, open("Perceptron Results\\basic_w_50.p", "wb"), protocol=2)
-
-        print('\nStarting perceptron with N = 80:')
-        w_80 = self.perceptron(80)
-        print('DONE perceptron (N=80)')
-        pickle.dump(w_80, open("Perceptron Results\\basic_w_80.p", "wb"), protocol=2)
-
-        print('\nStarting perceptron with N = 100:')
-        w_100 = self.perceptron(100)
-        print('DONE perceptron (N=100)')
-        pickle.dump(w_100, open("Perceptron Results\\basic_w_100.p", "wb"), protocol=2)
+        self.perceptron(100)
 
         print('\nTHE LEARNING PROCESS TOOK ' + str(datetime.now()-start_time))
 
