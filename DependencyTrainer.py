@@ -285,10 +285,13 @@ class DependencyTrainer:
         self.get_frequent_features()
         print('***Total of ' + str(len(self.features)) + ' optimized features***')
 
+        pickle.dump(self.features, open("Perceptron Results\\features.p", "wb"), protocol=2)
+
         print('\nDoing some magic...')
         self.calculate_features_for_all_graphs()
         print('All done!')
 
+        print('Started perceptron algorithm...')
         self.perceptron(100)
 
         print('\nTHE LEARNING PROCESS TOOK ' + str(datetime.now()-start_time))
