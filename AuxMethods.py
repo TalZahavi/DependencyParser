@@ -3,6 +3,20 @@ import networkx as nx
 
 
 # Get (word,pos) data and make a full graph
+def make_full_graph(words_pos):
+    full_g = dict()
+    for word_pos_i in words_pos:
+        for word_pos_j in words_pos:
+            if word_pos_i[0] != word_pos_j[0] and word_pos_j[0] != 'root':
+
+                if (word_pos_i[0], word_pos_i[1]) in full_g:
+                    (full_g[(word_pos_i[0], word_pos_i[1])])[(word_pos_j[0], word_pos_j[1])] = 0
+                else:
+                    full_g[(word_pos_i[0], word_pos_i[1])] = {(word_pos_j[0], word_pos_j[1]): 0}
+    return full_g
+
+
+# Get (word,pos) data and make a full graph
 def build_full_graph(words_pos):
     full_g = nx.DiGraph()
     for word_pos_i in words_pos:
@@ -46,6 +60,18 @@ def get_features_for_graph(g, features):
     return features_list
 
 
+# Get a graph, and return a list of lists
+# Each list holds the features number that return 1 for that arch
+def get_features_for_graph2(g, features):
+    features_list = []
+    for head_data in g:
+        for child_data in g[head_data]:
+            dependency_arch = (head_data[0], head_data[1], child_data[0], child_data[1])
+            features_list.append(((head_data[0], head_data[1]), (child_data[0], child_data[1]),
+                                    get_features_for_arch(features, dependency_arch)))
+    return features_list
+
+
 # Get a graph and a features list that fit to his arches
 # Return a weighted graph (according to the features)
 def get_weighted_graph(g, features_list, w):
@@ -54,6 +80,15 @@ def get_weighted_graph(g, features_list, w):
         for feature_i in features_edge[2]:
             weight += w[feature_i]
         g[features_edge[0]][features_edge[1]]['weight'] = -weight
+    return g
+
+
+def get_weighted_graph2(g, features_list, w):
+    for features_edge in features_list:
+        weight = 0
+        for feature_i in features_edge[2]:
+            weight += w[feature_i]
+        g[features_edge[0]][features_edge[1]] = weight
     return g
 
 

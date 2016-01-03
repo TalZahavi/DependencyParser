@@ -1,15 +1,18 @@
 from datetime import datetime
+import pickle
+import numpy as np
+import edmonds
 
 
 class DpTrainer:
-    FEATURE_1_LIMIT = 0
-    FEATURE_2_LIMIT = 0
+    FEATURE_1_LIMIT = 2
+    FEATURE_2_LIMIT = 2
     FEATURE_3_LIMIT = 0
-    FEATURE_4_LIMIT = 0
-    FEATURE_5_LIMIT = 0
+    FEATURE_4_LIMIT = 5
+    FEATURE_5_LIMIT = 5
     FEATURE_6_LIMIT = 0
-    FEATURE_8_LIMIT = 0
-    FEATURE_10_LIMIT = 0
+    FEATURE_8_LIMIT = 10
+    FEATURE_10_LIMIT = 10
     FEATURE_13_LIMIT = 0
 
     def __init__(self):
@@ -31,6 +34,8 @@ class DpTrainer:
 
         self.graphs = []  # Holds (graph, full_graph)
         self.scored_graphs = []  # Holds (graph, graph score,  full_graph, full_graph score)
+
+        self.f_vector_results = dict()
 
     #################
     # FEATURES PART #
@@ -175,7 +180,8 @@ class DpTrainer:
         for head_data in g:
             for child_data in g[head_data]:
                 dependency_arch = (head_data[0], head_data[1], child_data[0], child_data[1])
-                features_list.append(self.get_features_for_arch(dependency_arch))
+                features_list.append(((head_data[0], head_data[1]), (child_data[0], child_data[1]),
+                                      self.get_features_for_arch(dependency_arch)))
         return features_list
 
     # Doing this calculation one time !
@@ -189,8 +195,57 @@ class DpTrainer:
     # Perceptron Algorithm #
     ########################
 
+    @staticmethod
+    def get_weighted_graph(g, features_list, w):
+        for features_edge in features_list:
+            weight = 0
+            for feature_i in features_edge[2]:
+                weight += w[feature_i]
+            g[features_edge[0]][features_edge[1]] = weight
+        return g
+
+    def get_f_vector(self, g):
+        f_vector = np.zeros(self.feature_num, dtype=int)
+        features = self.get_features_for_graph(g)
+        for feature_data in features:
+            for feature_i in feature_data[2]:
+                f_vector[feature_i] += 1
+        return f_vector
+
+    def get_f_vector_real(self, g):
+        if g in self.f_vector_results:
+            return self.f_vector_results[g]
+        else:
+            temp = self.get_f_vector(g)
+            self.f_vector_results[g] = temp
+            return temp
+
     def perceptron(self, n):
-        pass
+        w = np.zeros(self.feature_num, dtype=int)
+        for i in range(0, n):
+            iteration_time = datetime.now()
+            for data in self.scored_graphs:
+                weighted_full_graph = self.get_weighted_graph(data[2], data[3], w)
+                g_tag = edmonds.mst(('root', 'root'), weighted_full_graph)
+                if True:  # TODO: NEED HERE TO CHECK IF NOT EQUAL? + SAVE RESULTS
+                    w = w + self.get_f_vector(data[0]) - self.get_f_vector(g_tag)
+            print('Done ' + str(i+1) + ' iteration at ' + str(datetime.now()-iteration_time))
+            self.save_w(w, i+1)
+
+    @staticmethod
+    def save_w(w, iteration):
+        if iteration == 20:
+            print('DONE perceptron (N=20)')
+            pickle.dump(w, open("Perceptron Results\\basic_w_20.p", "wb"), protocol=2)
+        if iteration == 50:
+            print('DONE perceptron (N=50)')
+            pickle.dump(w, open("Perceptron Results\\basic_w_50.p", "wb"), protocol=2)
+        if iteration == 80:
+            print('DONE perceptron (N=80)')
+            pickle.dump(w, open("Perceptron Results\\basic_w_80.p", "wb"), protocol=2)
+        if iteration == 100:
+            print('DONE perceptron (N=100)')
+            pickle.dump(w, open("Perceptron Results\\basic_w_100.p", "wb"), protocol=2)
 
     #########
     # Train #
@@ -222,19 +277,21 @@ class DpTrainer:
         self.get_frequent_features()
         print('***Total of ' + str(len(self.features)) + ' optimized features***')
 
+        pickle.dump(self.features, open("Perceptron Results\\features.p", "wb"), protocol=2)
+
         print('\nDoing some magic...')
         self.calculate_features_for_all_graphs()
         print('All done!')
 
-        print('\nStarting perceptron with N=20')
-        self.perceptron(20)
-        print('DONE')
-        print('\nStarting perceptron with N=50')
-        self.perceptron(50)
-        print('DONE')
-        print('\nStarting perceptron with N=80')
-        self.perceptron(80)
-        print('DONE')
+        # print('\nStarting perceptron with N=20')
+        # self.perceptron(20)
+        # print('DONE')
+        # print('\nStarting perceptron with N=50')
+        # self.perceptron(50)
+        # print('DONE')
+        # print('\nStarting perceptron with N=80')
+        # self.perceptron(80)
+        # print('DONE')
         print('\nStarting perceptron with N=100')
         self.perceptron(100)
         print('DONE')
