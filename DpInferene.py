@@ -20,8 +20,7 @@ class DpInference:
         for node_head in g:
             for node_child in g[node_head]:
                 word_num = word_number_dict[(node_child[0], node_child[1])]
-
-                if node_child[0] == 'root':
+                if node_head[0] == 'root':
                     ordered_arches[word_num] = (node_child[0], node_child[1], 0)
                 else:
                     ordered_arches[word_num] = (node_child[0], node_child[1],
@@ -107,5 +106,5 @@ class DpInference:
         f2.close()
 
 z = DpInference()
-z.data_inference('Data\\test.unlabeled', 'Data\\newTest.mylabel', z.w_80)
-z.get_accuracy('Data\\test.labeled', 'Data\\newTest.mylabel')
+z.data_inference('Data\\test.unlabeled', 'Data\\test.mylabel', z.w_100)
+z.get_accuracy('Data\\test.labeled', 'Data\\test.mylabel')

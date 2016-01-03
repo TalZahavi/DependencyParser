@@ -88,7 +88,7 @@ def get_weighted_graph2(g, features_list, w):
         weight = 0
         for feature_i in features_edge[2]:
             weight += w[feature_i]
-        g[features_edge[0]][features_edge[1]] = weight
+        g[features_edge[0]][features_edge[1]] = -weight
     return g
 
 
