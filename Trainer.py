@@ -4,6 +4,7 @@ import numpy as np
 import edmonds
 import random
 import AuxFunctions
+import BasicFunctions
 
 
 class Trainer:
@@ -58,7 +59,7 @@ class Trainer:
                         else:
                             dependency_arch = (sentence_words_pos[word_tuple[2]][0],
                                                sentence_words_pos[word_tuple[2]][1], word_tuple[0], word_tuple[1])
-                        self.add_features_to_dicts(dependency_arch)
+                        BasicFunctions.add_features_to_dicts(self, dependency_arch)
 
                         arches.append((dependency_arch, word_tuple[2], counter))
                         data_for_full_graph.add((dependency_arch[2], dependency_arch[3], counter))
@@ -72,20 +73,6 @@ class Trainer:
                     # (counter)->(token,pos,head)
                     sentence_words_pos[int(split_line[0])] = (split_line[1], split_line[3], int(split_line[6]))
         f.close()
-
-    # Get a dependency arch, and add all the possible features to the dict
-    def add_features_to_dicts(self, dependency_arch):
-        self.add_feature_for_dependency((dependency_arch[0], dependency_arch[1]), self.feature_1_dict)
-        self.add_feature_for_dependency((dependency_arch[0], ''), self.feature_2_dict)
-        self.add_feature_for_dependency((dependency_arch[1], ''), self.feature_3_dict)
-        self.add_feature_for_dependency((dependency_arch[2], dependency_arch[3]), self.feature_4_dict)
-        self.add_feature_for_dependency((dependency_arch[2], ''), self.feature_5_dict)
-        self.add_feature_for_dependency((dependency_arch[3], ''), self.feature_6_dict)
-        self.add_feature_for_dependency((dependency_arch[1], (dependency_arch[2], dependency_arch[3])),
-                                        self.feature_8_dict)
-        self.add_feature_for_dependency(((dependency_arch[0], dependency_arch[1]), dependency_arch[3]),
-                                        self.feature_10_dict)
-        self.add_feature_for_dependency((dependency_arch[1], dependency_arch[3]), self.feature_13_dict)
 
     # Add a specific feature (to a specific feature dict)
     @staticmethod
@@ -117,18 +104,6 @@ class Trainer:
     ##########################
     # FREQUENT FEATURES PART #
     ##########################
-
-    # Get only frequent features (configurable limits)
-    def get_frequent_features(self):
-        self.add_frequent_feature(self.FEATURE_1_LIMIT, self.feature_1_dict, 1)
-        self.add_frequent_feature(self.FEATURE_2_LIMIT, self.feature_2_dict, 2)
-        self.add_frequent_feature(self.FEATURE_3_LIMIT, self.feature_3_dict, 3)
-        self.add_frequent_feature(self.FEATURE_4_LIMIT, self.feature_4_dict, 4)
-        self.add_frequent_feature(self.FEATURE_5_LIMIT, self.feature_5_dict, 5)
-        self.add_frequent_feature(self.FEATURE_6_LIMIT, self.feature_6_dict, 6)
-        self.add_frequent_feature(self.FEATURE_8_LIMIT, self.feature_8_dict, 8)
-        self.add_frequent_feature(self.FEATURE_10_LIMIT, self.feature_10_dict, 10)
-        self.add_frequent_feature(self.FEATURE_13_LIMIT, self.feature_13_dict, 13)
 
     # For a specific feature dict
     def add_frequent_feature(self, limit, feature_dict, dict_num):
@@ -239,7 +214,7 @@ class Trainer:
 
         print('\nAfter optimization, we left with the following features:')
         print('----------------------------------------------------------')
-        self.get_frequent_features()
+        BasicFunctions.get_frequent_features(self)
         print('***Total of ' + str(len(self.features)) + ' optimized features***')
 
         pickle.dump(self.features, open("Perceptron Results\\features.p", "wb"), protocol=2)
