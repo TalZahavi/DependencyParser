@@ -2,6 +2,7 @@ from datetime import datetime
 import pickle
 import numpy as np
 import edmonds
+import random
 
 
 class Trainer:
@@ -33,6 +34,8 @@ class Trainer:
 
         self.graphs = []  # Holds (graph, full_graph) #TODO: FIX COMMENT
         self.scored_graphs = []  # Holds (graph, graph score,  full_graph, full_graph score) #TODO: FIX COMMENT
+
+        self.saved_f_vector = dict()
 
     #################
     # FEATURES PART #
@@ -193,9 +196,11 @@ class Trainer:
     # Doing this calculation one time !
     # checking the features for each graph (real and full)
     def calculate_features_for_all_graphs(self):
+        graph_number = 0  # We use this to later save f_vector result in dict
         for data in self.graphs:
+            graph_number += 1
             self.scored_graphs.append((data[0], self.get_features_for_graph(data[0]),
-                                       data[1], self.get_features_for_graph(data[1])))
+                                       data[1], self.get_features_for_graph(data[1]), graph_number))
 
     ########################
     # Perceptron Algorithm #
@@ -218,16 +223,26 @@ class Trainer:
                 f_vector[feature_i] += 1
         return f_vector
 
+    def get_saved_f_vector(self, g, g_num):
+        if g_num in self.saved_f_vector:
+            return self.saved_f_vector[g_num]
+        else:
+            temp = self.get_f_vector(g)
+            self.saved_f_vector[g_num] = temp
+            return temp
+
     def perceptron(self, n):
         w = np.zeros(self.feature_num, dtype=int)
         for i in range(0, n):
             iteration_time = datetime.now()
-            for data in self.scored_graphs:
+            scored_graph_index = list(range(0, len(self.scored_graphs), 1))
+            shuffled_scored_graph_index = sorted(scored_graph_index, key=lambda k: random.random())
+            for index in shuffled_scored_graph_index:
+                data = self.scored_graphs[index]
                 weighted_full_graph = self.get_weighted_graph(data[2], data[3], w)
                 g_tag = edmonds.mst(('root', 'root', 0), weighted_full_graph)
-                if True:  # TODO: NEED HERE TO CHECK IF NOT EQUAL? + SAVE RESULTS
-                    # TODO: REAL F VECTOR!!!
-                    w = w + self.get_f_vector(data[0]) - self.get_f_vector(g_tag)
+                if True:  # TODO: NEED HERE TO CHECK IF NOT EQUAL?  + GET OUT AUX
+                    w = w + self.get_saved_f_vector(data[0], data[4]) - self.get_f_vector(g_tag)
             print('Done ' + str(i+1) + ' iteration at ' + str(datetime.now()-iteration_time))
             self.save_w(w, i+1)
 

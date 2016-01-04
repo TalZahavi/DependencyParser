@@ -99,5 +99,5 @@ class Inference:
         f2.close()
 
 z = Inference()
-z.data_inference('Data\\test.unlabeled', 'Data\\test.final', z.w_100)
+z.data_inference('Data\\test.unlabeled', 'Data\\test.final', z.w_20)
 z.get_accuracy('Data\\test.labeled', 'Data\\test.final')
