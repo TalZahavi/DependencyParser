@@ -226,6 +226,7 @@ class Trainer:
                 weighted_full_graph = self.get_weighted_graph(data[2], data[3], w)
                 g_tag = edmonds.mst(('root', 'root', 0), weighted_full_graph)
                 if True:  # TODO: NEED HERE TO CHECK IF NOT EQUAL? + SAVE RESULTS
+                    # TODO: REAL F VECTOR!!!
                     w = w + self.get_f_vector(data[0]) - self.get_f_vector(g_tag)
             print('Done ' + str(i+1) + ' iteration at ' + str(datetime.now()-iteration_time))
             self.save_w(w, i+1)
