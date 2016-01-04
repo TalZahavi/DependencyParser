@@ -32,8 +32,8 @@ class Trainer:
         self.features = dict()
         self.feature_num = 0
 
-        self.graphs = []  # Holds (graph, full_graph) #TODO: FIX COMMENT
-        self.scored_graphs = []  # Holds (graph, graph score,  full_graph, full_graph score) #TODO: FIX COMMENT
+        self.graphs = []  # Holds (graph, full_graph)
+        self.scored_graphs = []  # Holds (graph, graph features,  full_graph, full_graph features)
 
         self.saved_f_vector = dict()
 
@@ -41,7 +41,7 @@ class Trainer:
     # FEATURES PART #
     #################
 
-    # Add all seen features to the dicts
+    # Add all seen features to the dicts and save useful data for the building graphs process
     def get_features(self):
         sentence_words_pos = dict()
         with open('Data\\train.labeled', 'r') as f:
@@ -60,7 +60,6 @@ class Trainer:
                         self.add_features_to_dicts(dependency_arch)
 
                         arches.append((dependency_arch, word_tuple[2], counter))
-                        # data_for_full_graph.add((dependency_arch[0], dependency_arch[1]))
                         data_for_full_graph.add((dependency_arch[2], dependency_arch[3], counter))
 
                     arches.append(('root', 'root', 0))
@@ -99,6 +98,7 @@ class Trainer:
     # GRAPH PART #
     ##############
 
+    # Make a list of (correct graph, full graph) for learning algorithm
     def make_graphs(self):
         for arches_data in self.arches_data_list:
             # Get (arches tuples, full data)
@@ -114,6 +114,7 @@ class Trainer:
             self.graphs.append((g, self.make_full_graph(arches_data[1])))
 
     @staticmethod
+    # Get a list of (word,pod,word num) and build a valid full graph
     def make_full_graph(word_pos_num):
         full_g = dict()
         for word_pos_num_i in word_pos_num:
@@ -182,8 +183,7 @@ class Trainer:
         return num_features
 
     # Get a graph, and return a list of lists
-    # Each list holds the features number that return 1 for that arch
-    # TODO: CHECK AGAIN!
+    # Each list holds the features number that return 1 for that arch (and the arch data)
     def get_features_for_graph(self, g):
         features_list = []
         for head_data in g:
@@ -207,6 +207,7 @@ class Trainer:
     ########################
 
     @staticmethod
+    # Get a graph, list of features that apply on him and vector w - return the weighted graph
     def get_weighted_graph(g, features_list, w):
         for features_edge in features_list:
             weight = 0
@@ -215,6 +216,7 @@ class Trainer:
             g[(features_edge[0][0], features_edge[0][1], features_edge[0][2])][(features_edge[1][0], features_edge[1][1], features_edge[1][2])] = -weight
         return g
 
+    # Return the f vector for a given graph
     def get_f_vector(self, g):
         f_vector = np.zeros(self.feature_num, dtype=int)
         features = self.get_features_for_graph(g)
@@ -223,6 +225,8 @@ class Trainer:
                 f_vector[feature_i] += 1
         return f_vector
 
+    # Check if we already calculated the f vector of real graph
+    # If yes - return the calculated vector. if no - calculate and save the result
     def get_saved_f_vector(self, g, g_num):
         if g_num in self.saved_f_vector:
             return self.saved_f_vector[g_num]
@@ -231,6 +235,8 @@ class Trainer:
             self.saved_f_vector[g_num] = temp
             return temp
 
+    # This is the heart of the algorithm!
+    # We are using permutation each iteration for better performance
     def perceptron(self, n):
         w = np.zeros(self.feature_num, dtype=int)
         for i in range(0, n):
@@ -247,6 +253,7 @@ class Trainer:
             self.save_w(w, i+1)
 
     @staticmethod
+    # If its the 20\50\80\100 iteration - save the w vector for later use
     def save_w(w, iteration):
         if iteration == 20:
             print('DONE perceptron (N=20)\n')
@@ -265,6 +272,7 @@ class Trainer:
     # Train #
     #########
 
+    # Just a method to run the training process from top to bottom
     def train(self):
         start_time = datetime.now()
         print('\nGetting all features...')

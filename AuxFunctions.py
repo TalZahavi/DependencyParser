@@ -1,3 +1,4 @@
+# Get a list of (word,pod,word num) and build a valid full graph
 def make_full_graph(word_pos_num):
     full_g = dict()
     for word_pos_num_i in word_pos_num:
@@ -12,6 +13,7 @@ def make_full_graph(word_pos_num):
     return full_g
 
 
+# Get a graph, list of features that apply on him and vector w - return the weighted graph
 def get_weighted_graph(g, features_list, w):
     for features_edge in features_list:
         weight = 0
@@ -46,8 +48,7 @@ def get_features_for_arch(features, dependency_arch):
 
 
 # Get a graph, and return a list of lists
-# Each list holds the features number that return 1 for that arch
-# TODO: CHECK AGAIN!
+# Each list holds the features number that return 1 for that arch (and the arch data)
 def get_features_for_graph(features, g):
     features_list = []
     for head_data in g:
