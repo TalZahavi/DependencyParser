@@ -5,20 +5,37 @@ import edmonds
 import random
 import AuxFunctions
 import BasicFunctions
+import ImprovedFunctions
 
 
 class Trainer:
-    FEATURE_1_LIMIT = 2
-    FEATURE_2_LIMIT = 2
-    FEATURE_3_LIMIT = 0
-    FEATURE_4_LIMIT = 5
-    FEATURE_5_LIMIT = 5
-    FEATURE_6_LIMIT = 0
-    FEATURE_8_LIMIT = 10
-    FEATURE_10_LIMIT = 10
-    FEATURE_13_LIMIT = 0
 
-    def __init__(self):
+    # Basic model
+    FEATURE_1_LIMIT = 0   # p - word, p-pos
+    FEATURE_2_LIMIT = 0   # p - word
+    FEATURE_3_LIMIT = 0   # p - pos
+    FEATURE_4_LIMIT = 0   # c - word, c-pos
+    FEATURE_5_LIMIT = 0   # c - word
+    FEATURE_6_LIMIT = 0   # c - pos
+    FEATURE_8_LIMIT = 0   # p - pos, c - word, c - pos
+    FEATURE_10_LIMIT = 0  # p -word, p - pos, c - pos
+    FEATURE_13_LIMIT = 0  # p - pos, c - pos
+
+    # Improved model
+
+    FEATURE_7_LIMIT = 0   # p -word, p - pos, c- word, c - pos
+    FEATURE_9_LIMIT = 1   # p - word, c - word, c - pos
+    FEATURE_11_LIMIT = 1  # p -word, p - pos, c - word
+    FEATURE_12_LIMIT = 1  # p - word, c - word
+
+    FEATURE_14_LIMIT = 0  # p-pos,p-pos+1,c-pos-1,c-pos
+    FEATURE_15_LIMIT = 0  # p-pos-1,p-pos,c-pos-1,c-pos
+    FEATURE_16_LIMIT = 0  # p-pos,p-pos+1,c-pos,c-pos+1
+    FEATURE_17_LIMIT = 0  # p-pos-1,p-pos,c-pos,c-pos+1
+    FEATURE_18_LIMIT = 0  # p-pos,b-pos,c-pos
+
+    def __init__(self, is_improved):
+        self.is_improved = is_improved
         self.feature_1_dict = dict()
         self.feature_2_dict = dict()
         self.feature_3_dict = dict()
@@ -29,7 +46,21 @@ class Trainer:
         self.feature_10_dict = dict()
         self.feature_13_dict = dict()
 
+        # Add basic features for improved model
+        self.feature_7_dict = dict()
+        self.feature_9_dict = dict()
+        self.feature_11_dict = dict()
+        self.feature_12_dict = dict()
+
+        # Add improved features for improved model
+        self.feature_14_dict = dict()
+        self.feature_15_dict = dict()
+        self.feature_16_dict = dict()
+        self.feature_17_dict = dict()
+        self.feature_18_dict = dict()
+
         self.arches_data_list = []
+        self.sentence_tags = []
 
         self.features = dict()
         self.feature_num = 0
@@ -48,8 +79,9 @@ class Trainer:
         sentence_words_pos = dict()
         with open('Data\\train.labeled', 'r') as f:
             for line in f:
-                if line is '\n':
+                if line == '\n':
                     arches = []
+                    words_pos = dict()
                     data_for_full_graph = set()
                     for counter in sentence_words_pos:
                         word_tuple = sentence_words_pos[counter]
@@ -59,14 +91,22 @@ class Trainer:
                         else:
                             dependency_arch = (sentence_words_pos[word_tuple[2]][0],
                                                sentence_words_pos[word_tuple[2]][1], word_tuple[0], word_tuple[1])
-                        BasicFunctions.add_features_to_dicts(self, dependency_arch)
+                        if self.is_improved:
+                            ImprovedFunctions.add_features_to_dicts(self, dependency_arch)
+                        else:
+                            BasicFunctions.add_features_to_dicts(self, dependency_arch)
 
                         arches.append((dependency_arch, word_tuple[2], counter))
                         data_for_full_graph.add((dependency_arch[2], dependency_arch[3], counter))
-
+                        words_pos[counter] = word_tuple[1]
+                    words_pos[0] = 'root'
+                    sentence_words_pos[0] = ('root', 'root', 0)
+                    if self.is_improved:
+                        ImprovedFunctions.add_improved_features_to_dicts(self,sentence_words_pos)
                     arches.append(('root', 'root', 0))
                     data_for_full_graph.add(('root', 'root', 0))
                     self.arches_data_list.append((arches, list(data_for_full_graph)))
+                    self.sentence_tags.append(words_pos)
                     sentence_words_pos = dict()
                 else:
                     split_line = line.split('\t')
@@ -88,6 +128,7 @@ class Trainer:
 
     # Make a list of (correct graph, full graph) for learning algorithm
     def make_graphs(self):
+        counter = 0
         for arches_data in self.arches_data_list:
             # Get (arches tuples, full data)
             g = dict()
@@ -126,18 +167,19 @@ class Trainer:
         graph_number = 0  # We use this to later save f_vector result in dict
         for data in self.graphs:
             graph_number += 1
-            self.scored_graphs.append((data[0], AuxFunctions.get_features_for_graph(self.features, data[0]),
-                                       data[1], AuxFunctions.get_features_for_graph(self.features, data[1]),
-                                       graph_number))
+            self.scored_graphs.append((data[0], AuxFunctions.get_features_for_graph(self.features, data[0],
+                                    self.sentence_tags[graph_number - 1], self.is_improved), data[1],
+                                    AuxFunctions.get_features_for_graph(self.features, data[1],
+                                    self.sentence_tags[graph_number - 1], self.is_improved), graph_number))
 
     ########################
     # Perceptron Algorithm #
     ########################
 
     # Return the f vector for a given graph
-    def get_f_vector(self, g):
+    def get_f_vector(self, g, g_num):
         f_vector = np.zeros(self.feature_num, dtype=int)
-        features = AuxFunctions.get_features_for_graph(self.features, g)
+        features = AuxFunctions.get_features_for_graph(self.features, g, self.sentence_tags[g_num-1], self.is_improved)
         for feature_data in features:
             for feature_i in feature_data[2]:
                 f_vector[feature_i] += 1
@@ -149,7 +191,7 @@ class Trainer:
         if g_num in self.saved_f_vector:
             return self.saved_f_vector[g_num]
         else:
-            temp = self.get_f_vector(g)
+            temp = self.get_f_vector(g, g_num)
             self.saved_f_vector[g_num] = temp
             return temp
 
@@ -165,26 +207,13 @@ class Trainer:
                 data = self.scored_graphs[index]
                 weighted_full_graph = AuxFunctions.get_weighted_graph(data[2], data[3], w)
                 g_tag = edmonds.mst(('root', 'root', 0), weighted_full_graph)
-                if True:  # TODO: NEED HERE TO CHECK IF NOT EQUAL?
-                    w = w + self.get_saved_f_vector(data[0], data[4]) - self.get_f_vector(g_tag)
+                if True:  # For better performance
+                    w = w + self.get_saved_f_vector(data[0], data[4]) - self.get_f_vector(g_tag, data[4])
             print('Done ' + str(i+1) + ' iteration at ' + str(datetime.now()-iteration_time))
-            self.save_w(w, i+1)
-
-    @staticmethod
-    # If its the 20\50\80\100 iteration - save the w vector for later use
-    def save_w(w, iteration):
-        if iteration == 20:
-            print('DONE perceptron (N=20)\n')
-            pickle.dump(w, open("Perceptron Results\\basic_w_20.p", "wb"), protocol=2)
-        if iteration == 50:
-            print('DONE perceptron (N=50)\n')
-            pickle.dump(w, open("Perceptron Results\\basic_w_50.p", "wb"), protocol=2)
-        if iteration == 80:
-            print('DONE perceptron (N=80)\n')
-            pickle.dump(w, open("Perceptron Results\\basic_w_80.p", "wb"), protocol=2)
-        if iteration == 100:
-            print('DONE perceptron (N=100)\n')
-            pickle.dump(w, open("Perceptron Results\\basic_w_100.p", "wb"), protocol=2)
+            if self.is_improved:
+                ImprovedFunctions.save_w(w, i+1)
+            else:
+                BasicFunctions.save_w(w, i+1)
 
     #########
     # Train #
@@ -207,17 +236,38 @@ class Trainer:
         print(str(len(self.feature_8_dict)) + ' of feature 8')
         print(str(len(self.feature_10_dict)) + ' of feature 10')
         print(str(len(self.feature_13_dict)) + ' of feature 13')
-        print('***Total of ' + str(len(self.feature_1_dict)+len(self.feature_2_dict)+len(self.feature_3_dict) +
-                                   len(self.feature_4_dict)+len(self.feature_5_dict)+len(self.feature_6_dict) +
-                                   len(self.feature_8_dict)+len(self.feature_10_dict)+len(self.feature_13_dict)) +
-              ' features***')
+
+        num_features = len(self.feature_1_dict)+len(self.feature_2_dict)+len(self.feature_3_dict) + \
+                                   len(self.feature_4_dict)+len(self.feature_5_dict)+len(self.feature_6_dict) + \
+                                   len(self.feature_8_dict)+len(self.feature_10_dict)+len(self.feature_13_dict)
+        if self.is_improved:
+            print(str(len(self.feature_7_dict)) + ' of feature 7')
+            print(str(len(self.feature_9_dict)) + ' of feature 9')
+            print(str(len(self.feature_11_dict)) + ' of feature 11')
+            print(str(len(self.feature_12_dict)) + ' of feature 12')
+            print(str(len(self.feature_14_dict)) + ' of feature 14')
+            print(str(len(self.feature_15_dict)) + ' of feature 15')
+            print(str(len(self.feature_16_dict)) + ' of feature 16')
+            print(str(len(self.feature_17_dict)) + ' of feature 17')
+            print(str(len(self.feature_18_dict)) + ' of feature 18')
+            num_features = num_features + len(self.feature_7_dict)+len(self.feature_9_dict)+len(self.feature_11_dict) \
+                           + len(self.feature_12_dict) + len(self.feature_14_dict)+len(self.feature_15_dict)\
+                           +len(self.feature_16_dict) + len(self.feature_17_dict) + len(self.feature_18_dict)
+
+        print('***Total of ' + str(num_features) + ' features***')
 
         print('\nAfter optimization, we left with the following features:')
         print('----------------------------------------------------------')
-        BasicFunctions.get_frequent_features(self)
+        if self.is_improved:
+            ImprovedFunctions.get_frequent_features(self)
+        else:
+            BasicFunctions.get_frequent_features(self)
         print('***Total of ' + str(len(self.features)) + ' optimized features***')
 
-        pickle.dump(self.features, open("Perceptron Results\\features.p", "wb"), protocol=2)
+        if self.is_improved:
+            pickle.dump(self.features, open("Perceptron Results\\features.p", "wb"), protocol=2)
+        else:
+            pickle.dump(self.features, open("Perceptron Results\\basic_features.p", "wb"), protocol=2)
 
         print('\nDoing some magic...')
         self.calculate_features_for_all_graphs()
@@ -230,5 +280,5 @@ class Trainer:
         print('\nTHE LEARNING PROCESS TOOK ' + str(datetime.now()-start_time))
 
 
-x = Trainer()
+x = Trainer(True)
 x.train()

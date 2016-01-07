@@ -1,3 +1,6 @@
+import pickle
+
+
 # Get a dependency arch, and add all the possible features to the dict
 def add_features_to_dicts(self, dependency_arch):
     self.add_feature_for_dependency((dependency_arch[0], dependency_arch[1]), self.feature_1_dict)
@@ -48,3 +51,19 @@ def get_frequent_features(self):
     self.add_frequent_feature(self.FEATURE_8_LIMIT, self.feature_8_dict, 8)
     self.add_frequent_feature(self.FEATURE_10_LIMIT, self.feature_10_dict, 10)
     self.add_frequent_feature(self.FEATURE_13_LIMIT, self.feature_13_dict, 13)
+
+
+# If its the 20\50\80\100 iteration - save the w vector for later use
+def save_w(w, iteration):
+    if iteration == 20:
+        print('DONE perceptron (N=20)\n')
+        pickle.dump(w, open("Perceptron Results\\basic_w_20.p", "wb"), protocol=2)
+    if iteration == 50:
+        print('DONE perceptron (N=50)\n')
+        pickle.dump(w, open("Perceptron Results\\basic_w_50.p", "wb"), protocol=2)
+    if iteration == 80:
+        print('DONE perceptron (N=80)\n')
+        pickle.dump(w, open("Perceptron Results\\basic_w_80.p", "wb"), protocol=2)
+    if iteration == 100:
+        print('DONE perceptron (N=100)\n')
+        pickle.dump(w, open("Perceptron Results\\basic_w_100.p", "wb"), protocol=2)

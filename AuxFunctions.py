@@ -1,4 +1,5 @@
 import BasicFunctions
+import ImprovedFunctions
 
 
 # Get a list of (word,pod,word num) and build a valid full graph
@@ -28,11 +29,16 @@ def get_weighted_graph(g, features_list, w):
 
 # Get a graph, and return a list of lists
 # Each list holds the features number that return 1 for that arch (and the arch data)
-def get_features_for_graph(features, g):
+def get_features_for_graph(features, g, g_words_tags, is_improved):
     features_list = []
     for head_data in g:
         for child_data in g[head_data]:
             dependency_arch = (head_data[0], head_data[1], child_data[0], child_data[1])
-            features_list.append(((head_data[0], head_data[1], head_data[2]), (child_data[0], child_data[1], child_data[2]),
+            if is_improved:
+                features_list.append(((head_data[0], head_data[1], head_data[2]), (child_data[0], child_data[1], child_data[2]),
+                                    ImprovedFunctions.get_features_for_arch(features, dependency_arch, g_words_tags,
+                                                                            child_data[2], head_data[2])))
+            else:
+                features_list.append(((head_data[0], head_data[1], head_data[2]), (child_data[0], child_data[1], child_data[2]),
                                     BasicFunctions.get_features_for_arch(features, dependency_arch)))
     return features_list

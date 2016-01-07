@@ -5,13 +5,20 @@ import AuxFunctions
 
 class Inference:
 
-    def __init__(self):
-        self.w_20 = pickle.load(open("Perceptron Results\\basic_w_20.p", "rb"))
-        self.w_50 = pickle.load(open("Perceptron Results\\basic_w_50.p", "rb"))
-        self.w_80 = pickle.load(open("Perceptron Results\\basic_w_80.p", "rb"))
-        self.w_100 = pickle.load(open("Perceptron Results\\basic_w_100.p", "rb"))
-
-        self.features = pickle.load(open("Perceptron Results\\features.p", "rb"))
+    def __init__(self, is_improved):
+        self.is_improved = is_improved
+        if self.is_improved:
+            self.features = pickle.load(open("Perceptron Results\\features.p", "rb"))
+            self.w_20 = pickle.load(open("Perceptron Results\\Improved_w_20.p", "rb"))
+            self.w_50 = pickle.load(open("Perceptron Results\\Improved_w_50.p", "rb"))
+            self.w_80 = pickle.load(open("Perceptron Results\\Improved_w_80.p", "rb"))
+            self.w_100 = pickle.load(open("Perceptron Results\\Improved_w_100.p", "rb"))
+        else:
+            self.w_20 = pickle.load(open("Perceptron Results\\basic_w_20.p", "rb"))
+            self.w_50 = pickle.load(open("Perceptron Results\\basic_w_50.p", "rb"))
+            self.w_80 = pickle.load(open("Perceptron Results\\basic_w_80.p", "rb"))
+            self.w_100 = pickle.load(open("Perceptron Results\\basic_w_100.p", "rb"))
+            self.features = pickle.load(open("Perceptron Results\\basic_features.p", "rb"))
 
     # Get a graph and return arches in the right order (by token number)
     @staticmethod
@@ -27,8 +34,8 @@ class Inference:
     @staticmethod
     def write_lines(lines_dict, f):
         for i in range(1, len(lines_dict)+1):
-                f.write(str(i) + '\t' + str(lines_dict[i][0]) + '\t-\t' + str(lines_dict[i][1]) + '\t-\t-\t' +
-                        str(lines_dict[i][2]) + '\t-\t-\t-\n')
+                f.write(str(i) + '\t' + str(lines_dict[i][0]) + '\t_\t' + str(lines_dict[i][1]) + '\t_\t_\t' +
+                        str(lines_dict[i][2]) + '\t_\t_\t_\n')
 
         f.write('\n')
 
@@ -40,16 +47,20 @@ class Inference:
             with open(output_name, 'w+') as f2:
                 for line in f1:
 
-                    if line is '\n':
+                    if line == '\n':
                         data_for_full_graph = set()
+                        words_tags = dict()
                         for counter in sentence_words_pos:
                             word_tuple = sentence_words_pos[counter]
                             data_for_full_graph.add((word_tuple[0], word_tuple[1], counter))
+                            words_tags[counter] = sentence_words_pos[counter][1]
 
                         data_for_full_graph.add(('root', 'root', 0))
+                        sentence_words_pos[0] = ('root', 'root', 0)
+                        words_tags[0] = 'root'
 
                         full_unweighted_g = AuxFunctions.make_full_graph(list(data_for_full_graph))
-                        g_features = AuxFunctions.get_features_for_graph(self.features, full_unweighted_g)
+                        g_features = AuxFunctions.get_features_for_graph(self.features, full_unweighted_g, words_tags, self.is_improved)
                         full_weighted_g = AuxFunctions.get_weighted_graph(full_unweighted_g, g_features, w)
 
                         g_inference = edmonds.mst(('root', 'root', 0), full_weighted_g)
@@ -76,7 +87,7 @@ class Inference:
         sentence_num = 0
         with open(gold_document, 'r') as f1, open(test_document, 'r') as f2:
             for line1, line2 in zip(f1, f2):
-                if line2 is '\n':
+                if line2 == '\n':
                     sentence_num += 1
                     # print('The accuracy after the ' + str(sentence_num) + ' sentence is: ' +
                     #       str(round((correct/total)*100, 2)) + '%')
@@ -90,9 +101,9 @@ class Inference:
                                     correct += 1
         f1.close()
         f2.close()
-        return round((correct/total)*100, 2)
+        return float(correct)/float(total)*100
 
-z = Inference()
+z = Inference(True)
 print('Starting inference for w_20...')
 z.data_inference('Data\\test.unlabeled', 'Data\\test.mylabel20', z.w_20)
 result_20 = z.get_accuracy('Data\\test.labeled', 'Data\\test.mylabel20')
