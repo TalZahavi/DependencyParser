@@ -280,5 +280,5 @@ class Trainer:
         print('\nTHE LEARNING PROCESS TOOK ' + str(datetime.now()-start_time))
 
 
-x = Trainer(True)
+x = Trainer(False)
 x.train()

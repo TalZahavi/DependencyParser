@@ -14,11 +14,11 @@ class Inference:
             self.w_80 = pickle.load(open("Perceptron Results\\Improved_w_80.p", "rb"))
             self.w_100 = pickle.load(open("Perceptron Results\\Improved_w_100.p", "rb"))
         else:
+            self.features = pickle.load(open("Perceptron Results\\basic_features.p", "rb"))
             self.w_20 = pickle.load(open("Perceptron Results\\basic_w_20.p", "rb"))
             self.w_50 = pickle.load(open("Perceptron Results\\basic_w_50.p", "rb"))
             self.w_80 = pickle.load(open("Perceptron Results\\basic_w_80.p", "rb"))
             self.w_100 = pickle.load(open("Perceptron Results\\basic_w_100.p", "rb"))
-            self.features = pickle.load(open("Perceptron Results\\basic_features.p", "rb"))
 
     # Get a graph and return arches in the right order (by token number)
     @staticmethod
@@ -104,23 +104,34 @@ class Inference:
         return float(correct)/float(total)*100
 
 z = Inference(True)
-print('Starting inference for w_20...')
-z.data_inference('Data\\test.unlabeled', 'Data\\test.mylabel20', z.w_20)
-result_20 = z.get_accuracy('Data\\test.labeled', 'Data\\test.mylabel20')
+# print('Starting inference for w_20...')
+# z.data_inference('Data\\test.unlabeled', 'Data\\test.mylabel20', z.w_20)
+# result_20 = z.get_accuracy('Data\\test.labeled', 'Data\\test.mylabel20')
+#
+# print('\nStarting inference for w_50...')
+# z.data_inference('Data\\test.unlabeled', 'Data\\test.mylabel50', z.w_50)
+# result_50 = z.get_accuracy('Data\\test.labeled', 'Data\\test.mylabel50')
+#
+# print('\nStarting inference for w_80...')
+# z.data_inference('Data\\test.unlabeled', 'Data\\test.mylabel80', z.w_80)
+# result_80 = z.get_accuracy('Data\\test.labeled', 'Data\\test.mylabel80')
+#
+# print('\nStarting inference for w_100...')
+# z.data_inference('Data\\test.unlabeled', 'Data\\test.mylabel100', z.w_100)
+# result_100 = z.get_accuracy('Data\\test.labeled', 'Data\\test.mylabel100')
+#
+# print('\nThe accuracy for w_20 is ' + str(result_20) + '%')
+# print('The accuracy for w_50 is ' + str(result_50) + '%')
+# print('The accuracy for w_80 is ' + str(result_80) + '%')
+# print('The accuracy for w_100 is ' + str(result_100) + '%')
 
-print('\nStarting inference for w_50...')
-z.data_inference('Data\\test.unlabeled', 'Data\\test.mylabel50', z.w_50)
-result_50 = z.get_accuracy('Data\\test.labeled', 'Data\\test.mylabel50')
+z.features = pickle.load(open("Perceptron Results\\Competition\\basic_features.p", "rb"))
+z.w_20 = pickle.load(open("Perceptron Results\\Competition\\basic_w_20.p", "rb"))
 
-print('\nStarting inference for w_80...')
-z.data_inference('Data\\test.unlabeled', 'Data\\test.mylabel80', z.w_80)
-result_80 = z.get_accuracy('Data\\test.labeled', 'Data\\test.mylabel80')
+z.data_inference('Data\\comp.unlabeled', 'Data\\comp_m1_200279040.wtag', z.w_20)
 
-print('\nStarting inference for w_100...')
-z.data_inference('Data\\test.unlabeled', 'Data\\test.mylabel100', z.w_100)
-result_100 = z.get_accuracy('Data\\test.labeled', 'Data\\test.mylabel100')
+z.features = pickle.load(open("Perceptron Results\\Competition\\features.p", "rb"))
+z.w_20 = pickle.load(open("Perceptron Results\\Competition\\Improved_w_20.p", "rb"))
 
-print('\nThe accuracy for w_20 is ' + str(result_20) + '%')
-print('The accuracy for w_50 is ' + str(result_50) + '%')
-print('The accuracy for w_80 is ' + str(result_80) + '%')
-print('The accuracy for w_100 is ' + str(result_100) + '%')
+z.data_inference('Data\\comp.unlabeled', 'Data\\comp_m2_200279040.wtag', z.w_20)
+
